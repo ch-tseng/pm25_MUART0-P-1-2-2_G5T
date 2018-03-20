@@ -70,16 +70,18 @@ class ILI9341:
  
         x = 0
         r = 5
-        for i in data:
-            x = x + 5
-            y = 270 - int(i) 
-            #draw_img.line((x, y, x,20), width=10, fill=(255,0,0,255))
-            #draw_img.point((x, y), 'red')
-            draw_img.ellipse((x, y, x+2, y+2), fill = 'blue', outline ='blue')
 
-        draw_img.text((0,67), str(data[len(data)-1]), font=fnt_data, fill=(255,0,0,255))
-        timenow = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        draw_img.text((0,40), timenow, font=fnt_time, fill=(0,0,0,128))
+        if(len(data)>0):
+            for i in data:
+                x = x + 5
+                y = 270 - int(i) 
+                #draw_img.line((x, y, x,20), width=10, fill=(255,0,0,255))
+                #draw_img.point((x, y), 'red')
+                draw_img.ellipse((x, y, x+2, y+2), fill = 'blue', outline ='blue')
+
+            draw_img.text((0,67), str(data[len(data)-1]), font=fnt_data, fill=(255,0,0,255))
+            timenow = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            draw_img.text((0,40), timenow, font=fnt_time, fill=(0,0,0,128))
 
         chart = chart.rotate(90)
         chart = Image.alpha_composite(img, chart)
@@ -125,7 +127,6 @@ class ILI9341:
         self.disp.display(out)
 
     def printSensordata(self, fontPath, pmT=(20,30), pm25=(24,32), pmH=(30,32), imagePath=""):
-        print("TEST:",pmT,pmH)
         # get an image
         base = Image.open(imagePath).convert('RGBA')
 

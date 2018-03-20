@@ -61,17 +61,15 @@ class G5():
 
         if self.debug: print (sum)
         if self.debug: print (versum)
-        if sum == versum:
-            print ("data correct")
+        #if sum == versum:
 
     def read_data(self):
-        print("read_data...1")
         data = self.serial.read(32)
         #data_hex=data.encode('hex')
-        print("read_data...2")
+        #print("read_data...2")
         data_hex = data.hex()
-        print("read_data...3")
-        print("len:", len(data_hex), data_hex)
+        #print("read_data...3")
+        #print("len:", len(data_hex), data_hex)
         if self.debug: self.vertify_data(data_hex)
         try: 
             pm1_cf=int(data_hex[4]+data_hex[5]+data_hex[6]+data_hex[7],16) 
@@ -116,7 +114,6 @@ class G5():
         if self.debug: print ("pmT: {}".format(pmT))
         if self.debug: print ("pmH: {}".format(pmH))
         data = [pm1_cf, pm10_cf, pm25_cf, pm1, pm10, pm25, pmT, pmH]
-        print("DATA:", data)
         self.serial.close()
         return data
 

@@ -19,7 +19,7 @@ pinDefault = 16  #the GPIO pin for the button of default pm25 display
 pinQuite = 12  # disable the speak sound for PIR
 
 numData = 46  #How many pm25 data will be displayed on the screen?
-pirSensity = 10  #Sensity for the PIR, large number will delay the PIR sensity
+pirSensity = 5  #Sensity for the PIR, large number will delay the PIR sensity
 
 #you don't have to change the values below
 a_pm1 = [0, 0, 0, 0, 0, 0]
@@ -39,11 +39,16 @@ lastPlayVoice = 0
 pirAccumulated = 0
 last_pinOutdoor = 1
 last_pinIndoor = 1
+last_pinDefault = 1
+last_pinQuite = 1
+
+speaker = True   #Speaker on or off
+bg = "pics/pmbg.jpg"
 
 #Setup
 #You have to update the LCD's siae and rotation if the LCD is not 240x320 resolution
 lcd = ILI9341(LCD_size_w=240, LCD_size_h=320, LCD_Rotate=0)
-lcd.displayImg("pics/pmbg.jpg")
+lcd.displayImg(bg)
 time.sleep(1)
 
 GPIO.setmode(GPIO.BCM)
@@ -54,17 +59,19 @@ GPIO.setup(pinPIR ,GPIO.IN)
 #GPIO.setup(pinIndoor ,GPIO.IN)
 GPIO.setup(pinOutdoor, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(pinIndoor, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(pinDefault, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(pinQuite, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 dataPM = pmDataCollect(lengthData=numData, debug=False)
 #dataPM.displayMode = 0  #0(default), 1 (outdoor), 2(indoor)
 #dataPM.displayScreen = 9  #for displayMode=1 or 2, 0: pm1, 1: pm25, 2: pm10
 
-def readFromUart(delay=0.5):
-    print("try to read first")
+def readFromUart(delay=0.2):
     g3 = (air.read("/dev/ttyAMA0"))
-    print("try to read second")
+    #print("try to read second")
     time.sleep(delay)
-    print("try to third second")
+    #print("try to third second")
+    #We only use the second data of reading
     g3 = (air.read("/dev/ttyAMA0"))
 
     try:
@@ -96,31 +103,51 @@ def readFromUart(delay=0.5):
     return (pm1, pm10, pm25, T, H)
 
 air=G5()
-air.debug = True
+air.debug = False
 i = 0
 while True:
     pirStatus = GPIO.input(pinPIR)
-    print(pirStatus)
     btn1 = GPIO.input(pinOutdoor)
     btn2 = GPIO.input(pinIndoor)
-    print("BTN1:{}  BTN2:{}".format(btn1,btn2))
+    btn3 = GPIO.input(pinDefault)
+    btn4 = GPIO.input(pinQuite)
+    #print("PIR:{}  BTN1:{}  BTN2:{}  mainBTN:{}  quiteBTN:{}".format(pirStatus, btn1,btn2,btn3, btn4))
+
+    if(btn3!=last_pinDefault and btn3==0):
+        #print("Default Button clicked")
+        dataPM.btnSelect(0, 0, 1, 0)
+
     if((btn1!=last_pinOutdoor and btn1==0) and (btn2!=last_pinIndoor and btn2==0)):
-        print("BTN1,2 clicked")
-        dataPM.btnSelect(1, 1)
+        #print("BTN1,2 clicked")
+        lcd.displayImg("pics/poweroff.jpg")
+        os.system('sudo shutdown now')
+
     else:
         if(btn1!=last_pinOutdoor and btn1==0):
-            print("BTN1 clicked")
-            dataPM.btnSelect(1, 0)
+            #print("BTN1 clicked")
+            dataPM.btnSelect(1, 0, 0, 0)
         if(btn2!=last_pinIndoor and btn2==0):
-            print("BTN2 clicked")
-            dataPM.btnSelect(0, 1)
+            #print("BTN2 clicked")
+            dataPM.btnSelect(0, 1, 0, 0)
+
+    if(btn4==0 and btn4!=last_pinQuite):
+        if(speaker==True):
+            bg = "pics/pmbg2.jpg"
+            speaker = False
+        else:
+            bg = "pics/pmbg.jpg"
+            speaker = True
+            if(speaker==True):
+                os.system('omxplayer --no-osd wav/speakeron.wav')
 
     last_pinIndoor = btn2
     last_pinOutdoor = btn1
+    last_pinDefault = btn3
+    last_pinQuite = btn4
 
     if(dataPM.displayMode==0):
         lcd.printSensordata("e1.ttf", pmT=dataPM.getLiveData("T"), pm25=dataPM.getLiveData("pm25"), \
-                pmH=dataPM.getLiveData("H"), imagePath="pics/pmbg.jpg")
+                pmH=dataPM.getLiveData("H"), imagePath=bg)
 
     elif(dataPM.displayMode==1):
         if(dataPM.displayScreen==0):
@@ -140,25 +167,26 @@ while True:
             lcd.drawLineChart(dataPM.getData("indoor_pm10"), "e1.ttf", "pics/indoor_pm10.jpg")
 
     if(dataPM.voiceFile != ""): 
-        os.system('omxplayer --no-osd ' + dataPM.voiceFile )
+        if(speaker==True):
+            os.system('omxplayer --no-osd ' + dataPM.voiceFile )
+
         dataPM.voiceFile  = ""
 
-    if(i % 2 == 0):
-        print("Device:", "#2, LOW")
-        GPIO.output(pinDevice, GPIO.LOW)
-        G3device = 0
-        liveData = readFromUart(0.5)
+    if(i % 60 == 0):
+        if(i % 2 == 0):
+            GPIO.output(pinDevice, GPIO.LOW)
+            G3device = 0
+            liveData = readFromUart(0.1)
 
-        dataPM.dataInput("indoor_pm1", liveData[0])
-        dataPM.dataInput("indoor_pm25", liveData[2])
-        dataPM.dataInput("indoor_pm10", liveData[1])
-        dataPM.dataInput("indoor_T", round(liveData[3],0))
-        dataPM.dataInput("indoor_H", round(liveData[4],0))
-    else:
-        print("Device:", "#1, HIGH")
-        GPIO.output(pinDevice, GPIO.HIGH)
-        G3device = 1
-        liveData = readFromUart(0.5)
+            dataPM.dataInput("indoor_pm1", liveData[0])
+            dataPM.dataInput("indoor_pm25", liveData[2])
+            dataPM.dataInput("indoor_pm10", liveData[1])
+            dataPM.dataInput("indoor_T", round(liveData[3],0))
+            dataPM.dataInput("indoor_H", round(liveData[4],0))
+        else:
+            GPIO.output(pinDevice, GPIO.HIGH)
+            G3device = 1
+            liveData = readFromUart(0.1)
 
         dataPM.dataInput("outdoor_pm1", liveData[0])
         dataPM.dataInput("outdoor_pm25", liveData[2])
@@ -167,10 +195,11 @@ while True:
         dataPM.dataInput("outdoor_H", round(liveData[4],0))
 
 
-    print ("time:{} PIR:{} BTN1:{} BTN2:{} device:{} --> pm1:{} pm2.5:{} pm10:{}".format(round(time.time()-lastPlayVoice),\
-            pirStatus, btn1, btn2, G3device, liveData[0], liveData[2], liveData[1]))
+        #print ("time:{} PIR:{} BTN1:{} BTN2:{} device:{} --> pm1:{} pm2.5:{} pm10:{}".format(round(time.time()-lastPlayVoice),\
+        #        pirStatus, btn1, btn2, G3device, liveData[0], liveData[2], liveData[1]))
 
-    print(liveData)
+
+        i = 0
 
     if(pirStatus==1): 
         pirAccumulated += 1
@@ -193,7 +222,9 @@ while True:
         elif(pm25_a>300):
             wav = 'pm25_6.wav'
 
-        #os.system('omxplayer --no-osd wav/' + wav)
+        if(speaker==True):
+            os.system('omxplayer --no-osd wav/' + wav)
+
         lastPlayVoice = time.time()
 
     i += 1

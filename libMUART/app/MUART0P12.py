@@ -128,10 +128,9 @@ class pmDataCollect():
 
 
 
-    def btnSelect(self, btn1, btn2):
+    def btnSelect(self, btn1, btn2, btn3, btn4):  #btn3--> Default button, btn4 --> Quite button
         self.voiceFile = ""
-        if(btn1==1 and btn2==0 ):
-            print("pinOutdoor clicked")
+        if(btn1==1 and btn2==0 and btn3==0 and btn4==0):
             if(self.displayMode != 1):
                 self.displayMode = 1
             else:
@@ -145,8 +144,7 @@ class pmDataCollect():
             elif(self.displayScreen==2):
                 self.voiceFile = "wav/pm10-outdoor.wav"
 
-        if(btn1==0 and btn2==1):
-            print("pinIndoor clicked")
+        if(btn1==0 and btn2==1 and btn3==0 and btn4==0):
             if(self.displayMode != 2):
                 self.displayMode = 2
                 self.displayScreen += 1
@@ -162,8 +160,6 @@ class pmDataCollect():
             elif(self.displayScreen==2):
                 self.voiceFile = "wav/pm10-indoor.wav"
 
-        if(btn1==1 and btn2==1):
-            print("2 buttons clicked")
+        if(btn1==0 and btn2==0 and btn3==1 and btn4==0):
             self.displayMode = 0
             self.voiceFile = "wav/pmstatus.wav"
-
