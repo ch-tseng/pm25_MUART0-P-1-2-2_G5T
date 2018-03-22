@@ -18,6 +18,12 @@ pinIndoor = 20  #the GPIO pin for the button of indoor's pm25 display
 pinDefault = 16  #the GPIO pin for the button of default pm25 display
 pinQuite = 12  # disable the speak sound for PIR
 
+#--> Not used....
+outdoor_pm25model = "G"  #You can select G or GT or GTS. (G: only pm2.5, GT: pm2.5+T&H, GTS: pm2.5+T&H+gas)
+indoor_pm25model = "GT" #You can select G or GT or GTS. (G: only pm2.5, GT: pm2.5+T&H, GTS: pm2.5+T&H+gas)
+#<---
+
+sensorRefresh = 15  #This number must be odd number, how many seconds will re-read the sensor data? 
 numData = 46  #How many pm25 data will be displayed on the screen?
 pirSensity = 5  #Sensity for the PIR, large number will delay the PIR sensity
 
@@ -42,8 +48,8 @@ last_pinIndoor = 1
 last_pinDefault = 1
 last_pinQuite = 1
 
-speaker = True   #Speaker on or off
-bg = "pics/pmbg.jpg"
+speaker = False   #Speaker on or off
+bg = "pics/pmbg2.jpg"
 
 #Setup
 #You have to update the LCD's siae and rotation if the LCD is not 240x320 resolution
@@ -103,7 +109,7 @@ def readFromUart(delay=0.2):
     return (pm1, pm10, pm25, T, H)
 
 air=G5()
-air.debug = False
+air.debug = True
 i = 0
 while True:
     pirStatus = GPIO.input(pinPIR)
@@ -172,7 +178,7 @@ while True:
 
         dataPM.voiceFile  = ""
 
-    if(i % 60 == 0):
+    if(i % sensorRefresh == 0):
         if(i % 2 == 0):
             GPIO.output(pinDevice, GPIO.LOW)
             G3device = 0
